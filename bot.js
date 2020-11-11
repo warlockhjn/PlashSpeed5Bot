@@ -18,9 +18,9 @@ let html = '';
 const usr = 'YourAmazonAccount';
 const pwd = 'YourAmazonPassword';
 
-const url = 'https://www.amazon.com/gp/product/B0002T401Y/';
+const url = 'https://www.amazon.com/gp/product/B08FC5L3RG/';
 const debug = true;
-const buy = false;
+const buy = true;
 const placeOrderSelectors = ['#turbo-checkout-iframe', '#bottomSubmitOrderButtonId', '#submitOrderButtonId', '[name="placeYourOrder1"]'];
 
 function login(usr, pwd) {
@@ -65,34 +65,42 @@ function login(usr, pwd) {
 	await page.click('[name="rememberMe"]');
 	await page.click('#signInSubmit');
 	await page.waitForNavigation();
-
+	await page.goto(url);
+	let i = 0;
 	do {
-		await page.goto(url);
+		try {
 		await page.click('#buy-now-button');
 
 		await page.waitForSelector('#turbo-checkout-iframe');
 
-		const selectorContainer = await page.waitForSelector(placeOrderSelectors.toString());
 
-		let containerName = selectorContainer._remoteObject.className;
+			const selectorContainer = await page.waitForSelector(placeOrderSelectors.toString());
 
-		console.log(containerName);     //HTMLSpanElement or HTMLIFrameElement
+			let containerName = selectorContainer._remoteObject.className;
 
-		if(containerName == 'HTMLIFrameElement') {
-			const frame = await page.frames().find(f => f.name() === 'turbo-checkout-iframe');
-			await frame.waitForSelector('#turbo-checkout-pyo-button');
-			const buy = await frame.$('#turbo-checkout-pyo-button');
-			await buy.click();
+			console.log(containerName);     //HTMLSpanElement or HTMLIFrameElement
+
+			if(containerName == 'HTMLIFrameElement') {
+				const frame = await page.frames().find(f => f.name() === 'turbo-checkout-iframe');
+				await frame.waitForSelector('#turbo-checkout-pyo-button');
+				const buy = await frame.$('#turbo-checkout-pyo-button');
+				await buy.click();
+				await page.waitFor(500);
+			}
+			else if(containerName == 'HTMLSpanElement') {
+				await page.click('#bottomSubmitOrderButtonId,#submitOrderButtonId,[name="placeYourOrder1"]');
+				await page.waitFor(500);
+			}
+			else {
+				console.log('Purchase Error 3');
+			}
 			await page.waitFor(500);
 		}
-		else if(containerName == 'HTMLSpanElement') {
-			await page.click('#bottomSubmitOrderButtonId,#submitOrderButtonId,[name="placeYourOrder1"]');
-			await page.waitFor(500);
+		catch(e) {
+			console.log(e);
 		}
-		else {
-			console.log('Purchase Error 3');
-		}
-		await page.waitFor(500);
+		console.log(i++);
+		await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
 	} while(buy === true)
 
 
